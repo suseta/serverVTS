@@ -216,55 +216,55 @@ try {
         return;
     }
 
-    const dataContent = decodedData.slice(1, -1);
-    const dataValues = decodedData.split(',');
+    // const dataContent = decodedData.slice(1, -1);
+    // const dataValues = decodedData.split(',');
 
-    const tableColumns = [
-      'start_char', 'packet_header', 'firmware_version', 'packet_type', 'packet_status', 'imei_number',
-        'vehicle_number', 'gps_status', 'gps_date','gps_time', 'latitude', 'latitude_direction', 'longitude',
-        'longitude_direction', 'altitude', 'speed', 'ground_course', 'satellite_count', 'hdop', 'pdop',
-        'network_operator', 'network_type', 'signal_power', 'main_power', 'internal_battery_voltage',
-        'ignition_input', 'buzzer_output', 'dynamic_field_1', 'bt_field', 'u_art', 'exact_adc_value',
-        'device_state', 'odometer', 'packet_count', 'crc', 'last_char'
-    ];
+    // const tableColumns = [
+    //   'start_char', 'packet_header', 'firmware_version', 'packet_type', 'packet_status', 'imei_number',
+    //     'vehicle_number', 'gps_status', 'gps_date','gps_time', 'latitude', 'latitude_direction', 'longitude',
+    //     'longitude_direction', 'altitude', 'speed', 'ground_course', 'satellite_count', 'hdop', 'pdop',
+    //     'network_operator', 'network_type', 'signal_power', 'main_power', 'internal_battery_voltage',
+    //     'ignition_input', 'buzzer_output', 'dynamic_field_1', 'bt_field', 'u_art', 'exact_adc_value',
+    //     'device_state', 'odometer', 'packet_count', 'crc', 'last_char'
+    // ];
 
-    const dataObject = {};
-    assetIdForAssetDeviceMapping = dataValues[5];
-    vehicleIdForAssetDeviceMapping = dataValues[6];
-    for (let i = 0; i < dataValues.length; i++) {
-        const columnName = tableColumns[i];
-        const value = dataValues[i].trim();
+    // const dataObject = {};
+    // assetIdForAssetDeviceMapping = dataValues[5];
+    // vehicleIdForAssetDeviceMapping = dataValues[6];
+    // for (let i = 0; i < dataValues.length; i++) {
+    //     const columnName = tableColumns[i];
+    //     const value = dataValues[i].trim();
 
-        if (value === '') {
-            dataObject[columnName] = 'NULL';
-        } else {
-          if (columnName === 'gps_date') {
-              const dateComponent = dataValues[i];
-              inputDate = dateComponent.toString()
-              const day = inputDate.slice(0, 2);
-              const month = inputDate.slice(2, 4);
-              const year = inputDate.slice(4);
-              const dateObject = new Date(`20${year}-${month}-${day}`);
-              const formattedDate = dateObject.toISOString().split('T')[0];
-              dataObject[columnName] = `'${formattedDate}'`;
+    //     if (value === '') {
+    //         dataObject[columnName] = 'NULL';
+    //     } else {
+    //       if (columnName === 'gps_date') {
+    //           const dateComponent = dataValues[i];
+    //           inputDate = dateComponent.toString()
+    //           const day = inputDate.slice(0, 2);
+    //           const month = inputDate.slice(2, 4);
+    //           const year = inputDate.slice(4);
+    //           const dateObject = new Date(`20${year}-${month}-${day}`);
+    //           const formattedDate = dateObject.toISOString().split('T')[0];
+    //           dataObject[columnName] = `'${formattedDate}'`;
 
 
-            }else if(columnName === 'gps_time'){
-              const timeComponent = dataValues[i];
-              inputTime = timeComponent.toString();
-              const hours = inputTime.slice(0, 2);
-              const minutes = inputTime.slice(2, 4);
-              const seconds = inputTime.slice(4);
-              const formattedTime = `${hours}:${minutes}:${seconds}`;            
-              dataObject[columnName] = `'${formattedTime}'`;
-          }  
-          else if (isNaN(value)) {
-                dataObject[columnName] = `'${value}'`;
-              } else {
-                  dataObject[columnName] = value;
-              }
-          }
-    }
+    //         }else if(columnName === 'gps_time'){
+    //           const timeComponent = dataValues[i];
+    //           inputTime = timeComponent.toString();
+    //           const hours = inputTime.slice(0, 2);
+    //           const minutes = inputTime.slice(2, 4);
+    //           const seconds = inputTime.slice(4);
+    //           const formattedTime = `${hours}:${minutes}:${seconds}`;            
+    //           dataObject[columnName] = `'${formattedTime}'`;
+    //       }  
+    //       else if (isNaN(value)) {
+    //             dataObject[columnName] = `'${value}'`;
+    //           } else {
+    //               dataObject[columnName] = value;
+    //           }
+    //       }
+    // }
 
     const dataToInsert = {
         decodedData: decodedData,
