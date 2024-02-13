@@ -124,7 +124,7 @@ serverSocket.listen(TCP_PORT, '0.0.0.0', () => {
 //write to file
 
 const connectDb = async () => {
-  const connectionString = `postgresql://postgres:root@localhost:5432/vtsdb`;
+  const connectionString = `postgresql://postgres:root@localhost:5432/navxdb`;
   const client = new Client({ connectionString });
   await client.connect();
   return client;
