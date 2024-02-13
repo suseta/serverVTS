@@ -273,7 +273,7 @@ try {
 
     const query1 = {
         text: `
-            INSERT INTO datalog (s_raw_pkt,svr_ht_ts,i_status SMALLINT)
+            INSERT INTO datalog (s_raw_pkt,svr_ht_ts,i_status)
             VALUES ($1, $2 , $3)
             RETURNING *;
         `,
