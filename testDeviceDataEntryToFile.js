@@ -132,18 +132,16 @@ if (!fs.existsSync(dataDir)) {
 const storeDataFile = async(decodedData) =>{
   const fileName = `data_${new Date().toISOString().slice(0, 10)}.json`;
   const filePath = path.join(dataDir, fileName);
-
-  // Check if file exists, if not create new
   let fileData = [];
   if (fs.existsSync(filePath)) {
       fileData = JSON.parse(fs.readFileSync(filePath));
   }
-
-  // Append new data
-  fileData.push(decodedData);
-
+  const lines = decodedData.split('\n');
+  lines.forEach((line) => {
+    if (line.trim() !== '') {
+      fileData.push(line.trim()); 
+    }
+  });
   // Write data to file
   fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2));
 }
-
-
