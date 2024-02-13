@@ -173,10 +173,11 @@ const storeDataInDb = async (decodedData) => {
                 }
             }
       }
-
+      const currentDate = new Date();
+      const formattedDate = currentDate.toISOString().slice(0, 19).replace('T', ' ');
       const dataToInsert = {
           decodedData: decodedData,
-          ServerHitTimestamp: new Date(),
+          ServerHitTimestamp: formattedDate,
       };
 
       const query1 = {
