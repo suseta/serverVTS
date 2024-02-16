@@ -350,7 +350,7 @@ values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0],
               text: `
                   UPDATE last_port_by_imei
                   SET i_port_no = ${port}
-                  WHERE s_imei_no = ${dataObject[s_imei_no]}
+                  WHERE s_imei_no = ${dataObject['s_imei_no']}
                   RETURNING *;
               `,
           };
