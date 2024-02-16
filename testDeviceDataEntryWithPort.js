@@ -303,11 +303,11 @@ try {
 
     const query1 = {
         text: `
-            INSERT INTO datalog (s_raw_pkt,svr_ht_ts,i_status)
-            VALUES ($1, $2 , $3)
+            INSERT INTO datalog (s_raw_pkt,svr_ht_ts,i_status,s_port_no)
+            VALUES ($1, $2 , $3, $4)
             RETURNING *;
         `,
-values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0],
+    values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0,port],
     };
 
     let client = await getClient();
