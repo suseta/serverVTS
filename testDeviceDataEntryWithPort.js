@@ -262,7 +262,7 @@ try {
     vehicleIdForAssetDeviceMapping = dataValues[7];
     for (let i = 0; i < dataValues.length; i++) {
         const columnName = tableColumns[i];
-        const value = dataValues[i].trim();
+        // const value = dataValues[i].trim();
 
         if (value === '') {
             dataObject[columnName] = 'NULL';
