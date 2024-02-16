@@ -275,8 +275,8 @@ const storeDataInDb = async (port, decodedData) => {
           const dateComponent = dataValues[i];
           const inputDate = dateComponent.toString();
           const year = inputDate.slice(0, 4);
-          const month = inputDate.slice(5, 7);
-          const day = inputDate.slice(8);
+          const month = inputDate.slice(4, 6);
+          const day = inputDate.slice(6);
           const formattedDate = `${year}-${month}-${day}`;
           const ISTDate = new Date(formattedDate + 'T00:00:00'); // Date in UTC
           ISTDate.setHours(ISTDate.getHours() + 5 + 30 / 60); // Add 5 hours and 30 minutes for IST
