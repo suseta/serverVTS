@@ -263,6 +263,7 @@ try {
     for (let i = 0; i < dataValues.length; i++) {
         const columnName = tableColumns[i];
         // const value = dataValues[i].trim();
+        const value = dataValues[i];
 
         if (value === '') {
             dataObject[columnName] = 'NULL';
