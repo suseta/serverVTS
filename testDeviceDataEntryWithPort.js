@@ -304,7 +304,7 @@ try {
     const query1 = {
         text: `
             INSERT INTO datalog (s_raw_pkt,svr_ht_ts,i_status,s_port_no,i_imei_no)
-            VALUES ($1, $2 , $3, $4)
+            VALUES ($1, $2 , $3, $4,$5)
             RETURNING *;
         `,
     values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0,port,dataObject['s_imei_no']],
