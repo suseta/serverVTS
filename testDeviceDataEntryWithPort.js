@@ -5,6 +5,7 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 const schedule = require('node-schedule');
+const { v4: uuidv4 } = require('uuid');
 
 const HTTP_PORT = 3300;
 const TCP_PORT = 3303;
@@ -215,9 +216,12 @@ try {
 
     const dataContent = decodedData.slice(1, -1);
     const dataValues = decodedData.split(',');
-    dataValues.splice(0, 0, port);
+    const uuid = uuidv4(); 
+    dataValues.splice(0, 0, uuid);
+    dataValues.splice(1, 0, port);
 
     const tableColumns = [
+        's_unique_id',
         's_port_no',
         'c_start_char',
         's_pkt_hdr',
@@ -300,14 +304,13 @@ try {
         decodedData: decodedData,
         ServerHitTimestamp: formattedDate,
     };
-
     const query1 = {
         text: `
-            INSERT INTO datalog (s_raw_pkt,svr_ht_ts,i_status,s_port_no,i_imei_no)
-            VALUES ($1, $2 , $3, $4,$5)
+            INSERT INTO datalog (s_unique_id,s_raw_pkt,svr_ht_ts,i_status,s_port_no,i_imei_no)
+            VALUES ($1, $2 , $3, $4, $5, $66)
             RETURNING *;
         `,
-    values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0,port,dataObject['s_imei_no']],
+    values: [uuid,dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0,port,dataObject['s_imei_no']],
     };
 
     let client = await getClient();
