@@ -256,6 +256,7 @@ try {
     ];
     var tableSelectionBasedOnGpsStatus; 
     const dataObject = {};
+    dataObject['s_port_no'] = port;
     assetIdForAssetDeviceMapping = dataValues[5];
     vehicleIdForAssetDeviceMapping = dataValues[6];
     for (let i = 0; i < dataValues.length; i++) {
@@ -265,9 +266,7 @@ try {
         if (value === '') {
             dataObject[columnName] = 'NULL';
         } else {
-          if (columnName === 's_port_no'){
-            dataObject[columnName] = port;
-          }else if (columnName === 'gps_dt') {
+          if (columnName === 'gps_dt') {
             const dateComponent = dataValues[i];
             const inputDate = dateComponent.toString()
             const year = inputDate.slice(0, 4);

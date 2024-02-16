@@ -1,0 +1,22 @@
+[
+  {
+    "port": 1234,
+    "decodedData": "$raj*"
+  },
+  {
+    "port": 12345,
+    "decodedData": "$raj*"
+  },
+  {
+    "port": 12346,
+    "decodedData": "$raj*"
+  },
+  {
+    "port": 12347,
+    "decodedData": "$raj*"
+  },
+  {
+    "port": 12348,
+    "decodedData": "$raj*"
+  }
+]
