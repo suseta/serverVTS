@@ -345,6 +345,17 @@ values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0],
             };
 
             const updateResult = await client.query(query3);
+
+            const updateLastPortAccessbyImei = {
+              text: `
+                  UPDATE last_port_by_imei
+                  SET i_port_no = ${port}
+                  WHERE s_imei_no = ${dataObject[s_imei_no]}
+                  RETURNING *;
+              `,
+          };
+          const updatedPort = await client.query(updateLastPortAccessbyImei); 
+
         } else {
             console.log('Data does not inserted into the gps_device_data');
         }
