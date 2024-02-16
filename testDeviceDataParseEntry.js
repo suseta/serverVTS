@@ -268,13 +268,13 @@ try {
 
 
             }else if(columnName === 'gps_tm'){
-              const timeComponent = dataValues[i];
-              inputTime = timeComponent.toString();
-              const hours = inputTime.slice(0, 2);
-              const minutes = inputTime.slice(2, 4);
-              const seconds = inputTime.slice(4);
-              const formattedTime = `${hours}:${minutes}:${seconds}`;            
-              dataObject[columnName] = `'${formattedTime}'`;
+                const timeComponent = dataValues[i];
+                inputTime = timeComponent.toString();
+                const hours = timeComponent.slice(0, 2);
+                const minutes = timeComponent.slice(3, 5);
+                const seconds = timeComponent.slice(6);
+                const formattedTime = `${hours}:${minutes}:${seconds}`;            
+                dataObject[columnName] = `'${formattedTime}'`;
 
           }else if(columnName === 'i_gps_status'){
             tableSelectionBasedOnGpsStatus = value
