@@ -83,13 +83,13 @@ async function handleConnection(socket) {
   timeoutId = setTimeout(scheduleClosure, 1 * 60 * 60 * 1000);
 
   socket.on('data', async (data) => {
-    const port = socket.localPort; 
+    const port = socket.localPort;
     const decodedData = data.toString('utf-8');
     console.log(`Received ${decodedData.length} bytes of data from ${socket.remoteAddress}`);
     console.log(`Data: ${decodedData}`);
 
     // Store data in the database and process as needed
-    await storeDataFile(port,decodedData);
+    await storeDataFile(port, decodedData);
 
     // Push data to the WebSocket connections
     wsConnections.forEach((ws) => {
@@ -133,240 +133,244 @@ const connectDb = async () => {
 }
 
 const getClient = async () => {
-const client = await connectDb();
+  const client = await connectDb();
   return client;
 }
 
 const dataDir = './data';
 if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir);
+  fs.mkdirSync(dataDir);
 }
 
 
 const storeDataFile = async (port, decodedData) => {
-    const fileName = `data_${new Date().toISOString().slice(0, 10)}.json`;
-    const filePath = path.join(dataDir, fileName);
-    let fileData = [];
-    if (fs.existsSync(filePath)) {
-      fileData = JSON.parse(fs.readFileSync(filePath));
-    }
-    const lines = decodedData.split('\n');
-    lines.forEach((line) => {
-      if (line.trim() !== '') {
-        const dataObject = {
-          port: port,
-          decodedData: line.trim()
-        };
-        fileData.push(dataObject);
-      }
-    });
-    fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2));
-  };
-  
-  
-  function getLastProcessedPosition(filePath) {
-    const posFilePath = filePath + '.pos';
-    if (fs.existsSync(posFilePath)) {
-        return parseInt(fs.readFileSync(posFilePath, 'utf8'));
-    } else {
-        return 0;
-    }
+  const fileName = `data_${new Date().toISOString().slice(0, 10)}.json`;
+  const filePath = path.join(dataDir, fileName);
+  let fileData = [];
+  if (fs.existsSync(filePath)) {
+    fileData = JSON.parse(fs.readFileSync(filePath));
   }
-  
-  function updateLastProcessedPosition(filePath, position) {
-    const posFilePath = filePath + '.pos';
-    fs.writeFileSync(posFilePath, position.toString());
-  }
-  
-  async function readDataAndStoreInDB(filePath) {
-    const lastProcessedPosition = getLastProcessedPosition(filePath);
-    const fileData = JSON.parse(fs.readFileSync(filePath));
-  
-    // Insert new data entries into the PostgreSQL database
-    for (let i = lastProcessedPosition; i < fileData.length; i++) {
-        const entry = fileData[i];
-        await storeDataInDb(entry.port, entry.decodedData); // Pass port and decoded data to storeDataInDb
-        console.log(`pos = ${i} and Data = ${entry.decodedData}`);
+  const lines = decodedData.split('\n');
+  lines.forEach((line) => {
+    if (line.trim() !== '') {
+      const dataObject = {
+        port: port,
+        decodedData: line.trim()
+      };
+      fileData.push(dataObject);
     }
-    // Update last processed position
-    updateLastProcessedPosition(filePath, fileData.length);
+  });
+  fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2));
+};
+
+
+function getLastProcessedPosition(filePath) {
+  const posFilePath = filePath + '.pos';
+  if (fs.existsSync(posFilePath)) {
+    return parseInt(fs.readFileSync(posFilePath, 'utf8'));
+  } else {
+    return 0;
   }
+}
+
+function updateLastProcessedPosition(filePath, position) {
+  const posFilePath = filePath + '.pos';
+  fs.writeFileSync(posFilePath, position.toString());
+}
+
+async function readDataAndStoreInDB(filePath) {
+  const lastProcessedPosition = getLastProcessedPosition(filePath);
+  const fileData = JSON.parse(fs.readFileSync(filePath));
+
+  // Insert new data entries into the PostgreSQL database
+  for (let i = lastProcessedPosition; i < fileData.length; i++) {
+    const entry = fileData[i];
+    await storeDataInDb(entry.port, entry.decodedData); // Pass port and decoded data to storeDataInDb
+    console.log(`pos = ${i} and Data = ${entry.decodedData}`);
+  }
+  // Update last processed position
+  updateLastProcessedPosition(filePath, fileData.length);
+}
 
 
 schedule.scheduleJob('* * * * *', async () => {
-    const currentDate = new Date();
-    const fileName = `data_${currentDate.toISOString().slice(0, 10)}.json`;
-    const filePath = path.join(dataDir, fileName);
+  const currentDate = new Date();
+  const fileName = `data_${currentDate.toISOString().slice(0, 10)}.json`;
+  const filePath = path.join(dataDir, fileName);
 
-    // Check if the file exists
-    if (fs.existsSync(filePath)) {
-        await readDataAndStoreInDB(filePath);
-    }
+  // Check if the file exists
+  if (fs.existsSync(filePath)) {
+    await readDataAndStoreInDB(filePath);
+  }
 });
 
-const storeDataInDb = async (port,decodedData) => {
-var assetIdForAssetDeviceMapping; // device_id
-var vehicleIdForAssetDeviceMapping; // vehicle_id
+const storeDataInDb = async (port, decodedData) => {
+  var assetIdForAssetDeviceMapping; // device_id
+  var vehicleIdForAssetDeviceMapping; // vehicle_id
 
-try {
+  try {
     if (!decodedData.startsWith('$') || !decodedData.endsWith('*')) {
-        console.error('Invalid data format');
-        return;
+      console.error('Invalid data format');
+      return;
     }
 
     const dataContent = decodedData.slice(1, -1);
     const dataValues = decodedData.split(',');
-    const uuid = uuidv4(); 
+    const uuid = uuidv4();
     dataValues.splice(0, 0, uuid);
     dataValues.splice(1, 0, port);
 
     const tableColumns = [
-        's_unique_id',
-        's_port_no',
-        'c_start_char',
-        's_pkt_hdr',
-        's_frmwr_ver',
-        's_pkt_typ',
-        's_pkt_status',
-        's_imei_no',
-        's_asset_id',
-        'i_gps_status',
-        'gps_dt',
-        'gps_tm',
-        'd_lat',
-        's_lat_dir',
-        'd_long',
-        's_long_dir',
-        'd_alt',
-        'd_spd',
-        's_grd_crs',
-        'i_sat_cnt',
-        'd_hdop',
-        'd_pdop',
-        's_ntw_op',
-        's_ntw_typ',
-        'd_sgnl_pwr',
-        'd_int_bat_volt',
-        's_ign_ip',
-        's_buz_op',
-        's_dyn_f1',
-        's_bt_f',
-        's_u_art',
-        's_ext_adc_val',
-        's_dvc_state',
-        's_odometer',
-        's_pkt_cnt',
-        's_crc',
-        'c_last_char'       
+      's_unique_id',
+      's_port_no',
+      'c_start_char',
+      's_pkt_hdr',
+      's_frmwr_ver',
+      's_pkt_typ',
+      's_pkt_status',
+      's_imei_no',
+      's_asset_id',
+      'i_gps_status',
+      'gps_dt',
+      'gps_tm',
+      'd_lat',
+      's_lat_dir',
+      'd_long',
+      's_long_dir',
+      'd_alt',
+      'd_spd',
+      's_grd_crs',
+      'i_sat_cnt',
+      'd_hdop',
+      'd_pdop',
+      's_ntw_op',
+      's_ntw_typ',
+      'd_sgnl_pwr',
+      'd_int_bat_volt',
+      's_ign_ip',
+      's_buz_op',
+      's_dyn_f1',
+      's_bt_f',
+      's_u_art',
+      's_ext_adc_val',
+      's_dvc_state',
+      's_odometer',
+      's_pkt_cnt',
+      's_crc',
+      'c_last_char'
     ];
-    var tableSelectionBasedOnGpsStatus; 
+    var tableSelectionBasedOnGpsStatus;
     const dataObject = {};
-    
-    assetIdForAssetDeviceMapping = dataValues[7]; 
+
+    assetIdForAssetDeviceMapping = dataValues[7];
     vehicleIdForAssetDeviceMapping = dataValues[8];
     for (let i = 0; i < dataValues.length; i++) {
-        const columnName = tableColumns[i];
-        // const value = dataValues[i].trim();
-        const value = dataValues[i];
+      const columnName = tableColumns[i];
+      const value = dataValues[i];
 
-        if (value === '') {
-            dataObject[columnName] = 'NULL';
+      if (value === '') {
+        dataObject[columnName] = 'NULL';
+      } else {
+        if (columnName === 'gps_dt') {
+          const dateComponent = dataValues[i];
+          const inputDate = dateComponent.toString();
+          const year = inputDate.slice(0, 4);
+          const month = inputDate.slice(4, 6);
+          const day = inputDate.slice(6);
+          const formattedDate = `${year}-${month}-${day}`;
+          const ISTDate = new Date(formattedDate + 'T00:00:00'); // Date in UTC
+          ISTDate.setHours(ISTDate.getHours() + 5 + 30 / 60); // Add 5 hours and 30 minutes for IST
+          const ISTDateString = ISTDate.toISOString().split('T')[0]; // Convert back to string
+          dataObject[columnName] = `'${ISTDateString}'`;
+        } else if (columnName === 'gps_tm') {
+          const timeComponent = dataValues[i];
+          const inputTime = timeComponent.toString();
+          const hours = inputTime.slice(0, 2);
+          const minutes = inputTime.slice(3, 5);
+          const seconds = inputTime.slice(6);
+          const formattedTime = `${hours}:${minutes}:${seconds}`;
+          dataObject[columnName] = `'${formattedTime}'`;
+        } else if (columnName === 'i_gps_status') {
+          tableSelectionBasedOnGpsStatus = value;
+          dataObject[columnName] = `'${value}'`;
+        } else if (isNaN(value)) {
+          dataObject[columnName] = `'${value}'`;
         } else {
-          if (columnName === 'gps_dt') {
-            const dateComponent = dataValues[i];
-            const inputDate = dateComponent.toString()
-            const year = inputDate.slice(0, 4);
-            const month = inputDate.slice(4, 6);
-            const day = inputDate.slice(6);
-            const formattedDate = `${year}-${month}-${day}`;
-            dataObject[columnName] = `'${formattedDate}'`;
-        }else if(columnName === 'gps_tm'){
-                const timeComponent = dataValues[i];
-                const inputTime = timeComponent.toString();
-                const hours = inputTime.slice(0, 2);
-                const minutes = inputTime.slice(3, 5);
-                const seconds = inputTime.slice(6);
-                const formattedTime = `${hours}:${minutes}:${seconds}`; 
-                dataObject[columnName] = `'${formattedTime}'`;
-
-          }else if(columnName === 'i_gps_status'){
-            tableSelectionBasedOnGpsStatus = value
-            dataObject[columnName] = `'${value}'`;
-          }else if (isNaN(value)) {
-                dataObject[columnName] = `'${value}'`;
-         } else {
-                  dataObject[columnName] = value;
+          dataObject[columnName] = value;
         }
-        }
+      }
     }
     const currentDate = new Date();
-    const formattedDate = currentDate.toISOString().slice(0, 19).replace('T', ' ');
+    const ISTOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const ISTTime = new Date(currentDate.getTime() + ISTOffset);
+    const formattedDate = ISTTime.toISOString().slice(0, 19).replace('T', ' ');
     const dataToInsert = {
-        decodedData: decodedData,
-        ServerHitTimestamp: formattedDate,
+      decodedData: decodedData,
+      ServerHitTimestamp: formattedDate,
     };
     const query1 = {
-        text: `
-            INSERT INTO datalog (s_unique_id,s_raw_pkt,svr_ht_ts,i_status,s_port_no,i_imei_no)
-            VALUES ($1, $2 , $3, $4, $5, $6)
-            RETURNING *;
-        `,
-    values: [uuid,dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0,port,dataObject['s_imei_no']],
+      text: `
+              INSERT INTO datalog (s_unique_id,s_raw_pkt,svr_ht_ts,i_status,s_port_no,i_imei_no)
+              VALUES ($1, $2 , $3, $4, $5, $6)
+              RETURNING *;
+          `,
+      values: [uuid, dataToInsert.decodedData, dataToInsert.ServerHitTimestamp, 0, port, dataObject['s_imei_no']],
     };
 
     let client = await getClient();
     try {
-        const dataInsertResult = await client.query(query1);
-        const query2 = {
-            text: 'SELECT * FROM asset_device_mapping WHERE "s_asset_id" = $1 AND "i_nw_imei_no" = $2',
-            values: [assetIdForAssetDeviceMapping.toString(), vehicleIdForAssetDeviceMapping.toString()],
+      const dataInsertResult = await client.query(query1);
+      const query2 = {
+        text: 'SELECT * FROM asset_device_mapping WHERE "s_asset_id" = $1 AND "i_nw_imei_no" = $2',
+        values: [assetIdForAssetDeviceMapping.toString(), vehicleIdForAssetDeviceMapping.toString()],
+      };
+
+      const result = await client.query(query2);
+      if (result.rows[0] === undefined) {
+        if (tableSelectionBasedOnGpsStatus == 0) {
+          const insertQuery = {
+            text: `
+                          INSERT INTO gps_0_parsed_data (${Object.keys(dataObject).join(', ')})
+                          VALUES (${Object.values(dataObject).join(', ')})
+                          RETURNING *;
+                      `,
+          };
+          const gpsDeviceDataInsert = await client.query(insertQuery);
+        } else {
+          const insertQuery = {
+            text: `
+                          INSERT INTO gps_1_parsed_data (${Object.keys(dataObject).join(', ')})
+                          VALUES (${Object.values(dataObject).join(', ')})
+                          RETURNING *;
+                      `,
+          };
+          const gpsDeviceDataInsert = await client.query(insertQuery);
+        }
+        const query3 = {
+          text: 'UPDATE datalog SET "i_status" = 1 WHERE "s_raw_pkt" = $1',
+          values: [decodedData],
         };
 
-        const result = await client.query(query2);
-        if (result.rows[0] === undefined) {
-            if(tableSelectionBasedOnGpsStatus == 0){
-                const insertQuery = {
-                    text: `
-                        INSERT INTO gps_0_parsed_data (${Object.keys(dataObject).join(', ')})
-                        VALUES (${Object.values(dataObject).join(', ')})
-                        RETURNING *;
-                    `,
-                };
-                const gpsDeviceDataInsert = await client.query(insertQuery);
-            }else{
-                const insertQuery = {
-                    text: `
-                        INSERT INTO gps_1_parsed_data (${Object.keys(dataObject).join(', ')})
-                        VALUES (${Object.values(dataObject).join(', ')})
-                        RETURNING *;
-                    `,
-                };
-                const gpsDeviceDataInsert = await client.query(insertQuery);    
-            }            
-            const query3 = {
-                text: 'UPDATE datalog SET "i_status" = 1 WHERE "s_raw_pkt" = $1',
-                values: [decodedData],
-            };
+        const updateResult = await client.query(query3);
 
-            const updateResult = await client.query(query3);
+        const updateLastPortAccessbyImei = {
+          text: `
+                      UPDATE last_port_by_imei
+                      SET "s_last_port_no" = ${port}
+                      WHERE "i_imei_no" = $1`,
+          values: [dataObject['s_imei_no']],
+        };
+        const updatedPort = await client.query(updateLastPortAccessbyImei);
 
-            const updateLastPortAccessbyImei = {
-              text: `
-                  UPDATE last_port_by_imei
-                  SET "s_last_port_no" = ${port}
-                  WHERE "i_imei_no" = $1`,
-                  values:[dataObject['s_imei_no']],
-          };
-          const updatedPort = await client.query(updateLastPortAccessbyImei); 
-
-        } else {
-            console.log('Data does not inserted into the gps_device_data');
-        }
+      } else {
+        console.log('Data does not inserted into the gps_device_data');
+      }
     } finally {
-        await client.end();
+      await client.end();
     }
-} catch (error) {
+  } catch (error) {
     console.error('Error:', error);
-}
+  }
 };
+
 
