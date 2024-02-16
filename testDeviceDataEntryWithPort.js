@@ -350,9 +350,8 @@ values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0],
               text: `
                   UPDATE last_port_by_imei
                   SET "s_last_port_no" = ${port}
-                  WHERE "i_imei_no" = ${dataObject['s_imei_no']}
-                  RETURNING *;
-              `,
+                  WHERE "i_imei_no" = $1`,
+                  values:[dataObject['s_imei_no']],
           };
           const updatedPort = await client.query(updateLastPortAccessbyImei); 
 
