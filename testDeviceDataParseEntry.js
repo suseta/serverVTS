@@ -257,22 +257,19 @@ try {
             dataObject[columnName] = 'NA';
         } else {
           if (columnName === 'gps_dt') {
-              const dateComponent = dataValues[i];
-              inputDate = dateComponent.toString()
-              const day = inputDate.slice(0, 2);
-              const month = inputDate.slice(2, 4);
-              const year = inputDate.slice(4);
-              const dateObject = new Date(`20${year}-${month}-${day}`);
-              const formattedDate = dateObject.toISOString().split('T')[0];
-              dataObject[columnName] = `'${formattedDate}'`;
-
-
-            }else if(columnName === 'gps_tm'){
+            const dateComponent = dataValues[i];
+            const inputDate = dateComponent.toString()
+            const year = inputDate.slice(0, 4);
+            const month = inputDate.slice(4, 6);
+            const day = inputDate.slice(6);
+            const formattedDate = `${year}-${month}-${day}`;
+            dataObject[columnName] = `'${formattedDate}'`;
+        }else if(columnName === 'gps_tm'){
                 const timeComponent = dataValues[i];
-                inputTime = timeComponent.toString();
-                const hours = timeComponent.slice(0, 2);
-                const minutes = timeComponent.slice(3, 5);
-                const seconds = timeComponent.slice(6);
+                const inputTime = timeComponent.toString();
+                const hours = inputTime.slice(0, 2);
+                const minutes = inputTime.slice(3, 5);
+                const seconds = inputTime.slice(6);
                 const formattedTime = `${hours}:${minutes}:${seconds}`; 
                 dataObject[columnName] = `'${formattedTime}'`;
 
