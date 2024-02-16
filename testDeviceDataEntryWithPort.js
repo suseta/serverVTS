@@ -215,6 +215,7 @@ try {
 
     const dataContent = decodedData.slice(1, -1);
     const dataValues = decodedData.split(',');
+    dataValues.splice(0, 0, port);
 
     const tableColumns = [
         's_port_no',
@@ -256,9 +257,9 @@ try {
     ];
     var tableSelectionBasedOnGpsStatus; 
     const dataObject = {};
-    dataObject['s_port_no'] = port;
-    assetIdForAssetDeviceMapping = dataValues[5];
-    vehicleIdForAssetDeviceMapping = dataValues[6];
+    
+    assetIdForAssetDeviceMapping = dataValues[6]; 
+    vehicleIdForAssetDeviceMapping = dataValues[7];
     for (let i = 0; i < dataValues.length; i++) {
         const columnName = tableColumns[i];
         const value = dataValues[i].trim();
