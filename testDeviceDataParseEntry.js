@@ -285,7 +285,7 @@ try {
          } else {
                   dataObject[columnName] = value;
         }
-          }
+        }
     }
 
     const dataToInsert = {
@@ -311,35 +311,35 @@ values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0],
         };
 
         const result = await client.query(query2);
-        if (result.rows[0] === undefined) {
-            if(tableSelectionBasedOnGpsStatus == 0){
-                const insertQuery = {
-                    text: `
-                        INSERT INTO gps_0_parsed_data (${Object.keys(dataObject).join(', ')})
-                        VALUES (${Object.values(dataObject).join(', ')})
-                        RETURNING *;
-                    `,
-                };
-                const gpsDeviceDataInsert = await client.query(insertQuery);
-            }else{
-                const insertQuery = {
-                    text: `
-                        INSERT INTO gps_1_parsed_data (${Object.keys(dataObject).join(', ')})
-                        VALUES (${Object.values(dataObject).join(', ')})
-                        RETURNING *;
-                    `,
-                };
-                const gpsDeviceDataInsert = await client.query(insertQuery);    
-            }            
-            const query3 = {
-                text: 'UPDATE datalog SET "status" = 1 WHERE "s_raw_pkt" = $1',
-                values: [decodedData],
-            };
+        // if (result.rows[0] === undefined) {
+        //     if(tableSelectionBasedOnGpsStatus == 0){
+        //         const insertQuery = {
+        //             text: `
+        //                 INSERT INTO gps_0_parsed_data (${Object.keys(dataObject).join(', ')})
+        //                 VALUES (${Object.values(dataObject).join(', ')})
+        //                 RETURNING *;
+        //             `,
+        //         };
+        //         const gpsDeviceDataInsert = await client.query(insertQuery);
+        //     }else{
+        //         const insertQuery = {
+        //             text: `
+        //                 INSERT INTO gps_1_parsed_data (${Object.keys(dataObject).join(', ')})
+        //                 VALUES (${Object.values(dataObject).join(', ')})
+        //                 RETURNING *;
+        //             `,
+        //         };
+        //         const gpsDeviceDataInsert = await client.query(insertQuery);    
+        //     }            
+        //     const query3 = {
+        //         text: 'UPDATE datalog SET "status" = 1 WHERE "s_raw_pkt" = $1',
+        //         values: [decodedData],
+        //     };
 
-            const updateResult = await client.query(query3);
-        } else {
-            console.log('Data does not inserted into the gps_device_data');
-        }
+        //     const updateResult = await client.query(query3);
+        // } else {
+        //     console.log('Data does not inserted into the gps_device_data');
+        // }
     } finally {
         await client.end();
     }
