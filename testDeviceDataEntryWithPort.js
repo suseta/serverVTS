@@ -262,8 +262,8 @@ try {
     var tableSelectionBasedOnGpsStatus; 
     const dataObject = {};
     
-    assetIdForAssetDeviceMapping = dataValues[6]; 
-    vehicleIdForAssetDeviceMapping = dataValues[7];
+    assetIdForAssetDeviceMapping = dataValues[7]; 
+    vehicleIdForAssetDeviceMapping = dataValues[8];
     for (let i = 0; i < dataValues.length; i++) {
         const columnName = tableColumns[i];
         // const value = dataValues[i].trim();
@@ -307,7 +307,7 @@ try {
     const query1 = {
         text: `
             INSERT INTO datalog (s_unique_id,s_raw_pkt,svr_ht_ts,i_status,s_port_no,i_imei_no)
-            VALUES ($1, $2 , $3, $4, $5, $66)
+            VALUES ($1, $2 , $3, $4, $5, $6)
             RETURNING *;
         `,
     values: [uuid,dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0,port,dataObject['s_imei_no']],
