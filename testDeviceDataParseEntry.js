@@ -328,7 +328,7 @@ values: [dataToInsert.decodedData, dataToInsert.ServerHitTimestamp,0],
                 const gpsDeviceDataInsert = await client.query(insertQuery);    
             }            
             const query3 = {
-                text: 'UPDATE datalog SET "status" = 1 WHERE "s_raw_pkt" = $1',
+                text: 'UPDATE datalog SET "i_status" = 1 WHERE "s_raw_pkt" = $1',
                 values: [decodedData],
             };
 
