@@ -291,6 +291,7 @@ try {
 
           }else if(columnName === 'i_gps_status'){
             tableSelectionBasedOnGpsStatus = value
+            dataObject[columnName] = `'${value}'`;
           }else if (isNaN(value)) {
                 dataObject[columnName] = `'${value}'`;
          } else {
