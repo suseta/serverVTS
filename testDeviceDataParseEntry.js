@@ -254,7 +254,7 @@ try {
         const value = dataValues[i].trim();
 
         if (value === '') {
-            dataObject[columnName] = 'NA';
+            dataObject[columnName] = 'NULL';
         } else {
           if (columnName === 'gps_dt') {
             const dateComponent = dataValues[i];
