@@ -275,22 +275,34 @@ const storeDataInDb = async (port, decodedData) => {
           const dateComponent = dataValues[i];
           const inputDate = dateComponent.toString();
           const year = inputDate.slice(0, 4);
-          const month = inputDate.slice(4, 6);
-          const day = inputDate.slice(6);
+          const month = inputDate.slice(5, 7);
+          const day = inputDate.slice(8);
           const formattedDate = `${year}-${month}-${day}`;
           const ISTDate = new Date(formattedDate + 'T00:00:00'); // Date in UTC
           ISTDate.setHours(ISTDate.getHours() + 5 + 30 / 60); // Add 5 hours and 30 minutes for IST
           const ISTDateString = ISTDate.toISOString().split('T')[0]; // Convert back to string
           dataObject[columnName] = `'${ISTDateString}'`;
-        } else if (columnName === 'gps_tm') {
+        } else if(columnName === 'gps_tm') {
           const timeComponent = dataValues[i];
           const inputTime = timeComponent.toString();
-          const hours = inputTime.slice(0, 2);
-          const minutes = inputTime.slice(3, 5);
-          const seconds = inputTime.slice(6);
-          const formattedTime = `${hours}:${minutes}:${seconds}`;
+          const hours = parseInt(inputTime.slice(0, 2));
+          const minutes = parseInt(inputTime.slice(3, 5));
+          const seconds = parseInt(inputTime.slice(6));
+          const ISTOffsetHours = 5;
+          const ISTOffsetMinutes = 30;
+          let newHours = hours + ISTOffsetHours;
+          let newMinutes = minutes + ISTOffsetMinutes;
+          if (newMinutes >= 60) {
+              newHours += Math.floor(newMinutes / 60); 
+              newMinutes %= 60; 
+          }
+          newHours %= 24;
+          const formattedHours = ('0' + newHours).slice(-2);
+          const formattedMinutes = ('0' + newMinutes).slice(-2);
+          const formattedSeconds = ('0' + seconds).slice(-2);
+          const formattedTime = `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
           dataObject[columnName] = `'${formattedTime}'`;
-        } else if (columnName === 'i_gps_status') {
+        }else if (columnName === 'i_gps_status') {
           tableSelectionBasedOnGpsStatus = value;
           dataObject[columnName] = `'${value}'`;
         } else if (isNaN(value)) {
