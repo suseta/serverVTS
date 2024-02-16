@@ -273,7 +273,9 @@ try {
                 const hours = timeComponent.slice(0, 2);
                 const minutes = timeComponent.slice(3, 5);
                 const seconds = timeComponent.slice(6);
-                const formattedTime = `${hours}:${minutes}:${seconds}`;            
+                const dummyDate = new Date();
+                dummyDate.setHours(hours, minutes, seconds);
+                const formattedTime = dummyDate.toTimeString().slice(0, 8);           
                 dataObject[columnName] = `'${formattedTime}'`;
 
           }else if(columnName === 'i_gps_status'){
