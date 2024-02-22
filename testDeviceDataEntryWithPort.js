@@ -294,6 +294,18 @@ const storeDataInDb = async (port, decodedData) => {
           dataObject['gps_tm'] = `'${timeFormat}'`;
         }else if(columnName === 'gps_tm'){
           continue;
+        }else if(columnName === 'd_lat'){
+          if(value == 'NA'){
+            dataObject[columnName] = 0.0;  
+          }else{
+            dataObject[columnName] = value;  
+          }
+        }else if(columnName === 'd_long'){
+          if(value == 'NA'){
+            dataObject[columnName] = 0.0;  
+          }else{
+            dataObject[columnName] = value;  
+          }
         }
         else if (columnName === 'i_gps_status') {
           tableSelectionBasedOnGpsStatus = value;
