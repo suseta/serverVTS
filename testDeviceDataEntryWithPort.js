@@ -296,13 +296,13 @@ const storeDataInDb = async (port, decodedData) => {
           continue;
         }else if(columnName === 'd_lat'){
           if(value == 'NA'){
-            dataObject[columnName] = null;  
+            dataObject[columnName] = 'NULL';  
           }else{
             dataObject[columnName] = value;  
           }
         }else if(columnName === 'd_long'){
           if(value == 'NA'){
-            dataObject[columnName] = null;  
+            dataObject[columnName] = 'NULL';  
           }else{
             dataObject[columnName] = value;  
           }
