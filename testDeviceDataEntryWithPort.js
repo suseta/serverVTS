@@ -246,6 +246,7 @@ const storeDataInDb = async (port, decodedData) => {
       's_ntw_op',
       's_ntw_typ',
       'd_sgnl_pwr',
+      'd_mn_pwr',
       'd_int_bat_volt',
       's_ign_ip',
       's_buz_op',
