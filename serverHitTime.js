@@ -150,12 +150,18 @@ const storeDataFile = async (port, decodedData) => {
   if (fs.existsSync(filePath)) {
     fileData = JSON.parse(fs.readFileSync(filePath));
   }
+  const currentDate = new Date();
+  const ISTOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+  const ISTTime = new Date(currentDate.getTime() + ISTOffset);
+  const formattedDate = currentDate.toISOString().slice(0, 19).replace('T', ' ');
+    
   const lines = decodedData.split('\n');
   lines.forEach((line) => {
     if (line.trim() !== '') {
       const dataObject = {
         port: port,
-        decodedData: line.trim()
+        decodedData: line.trim(),
+        serverHitTime:formattedDate
       };
       fileData.push(dataObject);
     }
@@ -185,7 +191,7 @@ async function readDataAndStoreInDB(filePath) {
   // Insert new data entries into the PostgreSQL database
   for (let i = lastProcessedPosition; i < fileData.length; i++) {
     const entry = fileData[i];
-    await storeDataInDb(entry.port, entry.decodedData); // Pass port and decoded data to storeDataInDb
+    await storeDataInDb(entry.port, entry.decodedData, entry.serverHitTime); // Pass port and decoded data to storeDataInDb
     console.log(`pos = ${i} and Data = ${entry.decodedData}`);
   }
   // Update last processed position
@@ -204,7 +210,7 @@ schedule.scheduleJob('* * * * *', async () => {
   }
 });
 
-const storeDataInDb = async (port, decodedData) => {
+const storeDataInDb = async (port, decodedData, serverHitTime) => {
   var assetIdForAssetDeviceMapping; // device_id
   var vehicleIdForAssetDeviceMapping; // vehicle_id
 
@@ -279,7 +285,7 @@ const storeDataInDb = async (port, decodedData) => {
           const month = datePart.slice(4, 6);
           const day = datePart.slice(6);
           const [hours, minutes, seconds] = timePart.split(':').map(Number);
-          const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+  /*        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
           utcDate.setHours(utcDate.getHours() + 5);
           utcDate.setMinutes(utcDate.getMinutes() + 30);
           const ISTYear = utcDate.getUTCFullYear();
@@ -287,9 +293,12 @@ const storeDataInDb = async (port, decodedData) => {
           const ISTDay = ('0' + utcDate.getUTCDate()).slice(-2);
           const ISTHours = ('0' + utcDate.getUTCHours()).slice(-2);
           const ISTMinutes = ('0' + utcDate.getUTCMinutes()).slice(-2);
-          const ISTSeconds = ('0' + utcDate.getUTCSeconds()).slice(-2);
-          const dateFormat = `${ISTYear}-${ISTMonth}-${ISTDay}`
+          const ISTSeconds = ('0' + utcDate.getUTCSeconds()).slice(-2);   
+  	  const dateFormat = `${ISTYear}-${ISTMonth}-${ISTDay}`
           const timeFormat = `${ISTHours}:${ISTMinutes}:${ISTSeconds}`
+*/
+	 const dateFormat = `${year}-${month}-${day}`;
+	 const timeFormat = `${hours}:${minutes}:${seconds}`;
           dataObject[columnName] = `'${dateFormat}'`;
           dataObject['gps_tm'] = `'${timeFormat}'`;
         }else if(columnName === 'gps_tm'){
@@ -317,15 +326,9 @@ const storeDataInDb = async (port, decodedData) => {
         }
       }
     }
-    
-    const data = '';
-    const currentDate = new Date();
-    const ISTOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-    const ISTTime = new Date(currentDate.getTime() + ISTOffset);
-    const formattedDate = ISTTime.toISOString().slice(0, 19).replace('T', ' ');
     const dataToInsert = {
-      decodedData: data,
-      ServerHitTimestamp: formattedDate,
+      decodedData: decodedData,
+      ServerHitTimestamp: serverHitTime,
     };
     const query1 = {
       text: `
@@ -344,8 +347,8 @@ const storeDataInDb = async (port, decodedData) => {
         values: [assetIdForAssetDeviceMapping.toString(), vehicleIdForAssetDeviceMapping.toString()],
       };
 
-      const result = await client.query(query2);
-      if (result.rows[0] !== undefined) {
+      const result = await client.query(query2);console.log("re",result);
+      if (result.rowCount === 0) {
         if (tableSelectionBasedOnGpsStatus == 0) {
           const insertQuery = {
             text: `
@@ -391,5 +394,4 @@ const storeDataInDb = async (port, decodedData) => {
     console.error('Error:', error);
   }
 };
-
 
