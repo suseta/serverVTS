@@ -88,10 +88,8 @@ async function handleConnection(socket) {
     console.log(`Received ${decodedData.length} bytes of data from ${socket.remoteAddress}`);
     console.log(`Data: ${decodedData}`);
 
-    // Store data in the database and process as needed
     await storeDataFile(port, decodedData);
 
-    // Push data to the WebSocket connections
     wsConnections.forEach((ws) => {
       ws.send(decodedData);
     });
@@ -154,14 +152,14 @@ const storeDataFile = async (port, decodedData) => {
   const ISTOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
   const ISTTime = new Date(currentDate.getTime() + ISTOffset);
   const formattedDate = currentDate.toISOString().slice(0, 19).replace('T', ' ');
-    
+
   const lines = decodedData.split('\n');
   lines.forEach((line) => {
     if (line.trim() !== '') {
       const dataObject = {
         port: port,
         decodedData: line.trim(),
-        serverHitTime:formattedDate
+        serverHitTime: formattedDate
       };
       fileData.push(dataObject);
     }
@@ -210,189 +208,196 @@ schedule.scheduleJob('* * * * *', async () => {
   }
 });
 
-const storeDataInDb = async (port, decodedData, serverHitTime) => {
+const storeDataInDb = async (port, EncodedData, serverHitTime) => {
   var assetIdForAssetDeviceMapping; // device_id
   var vehicleIdForAssetDeviceMapping; // vehicle_id
   var timeFromDevice;
- var dateFromDevice;
+  var dateFromDevice;
   try {
-    if (!decodedData.startsWith('$') || !decodedData.endsWith('*')) {
-      console.error('Invalid data format');
-      return;
-    }
 
-    const dataContent = decodedData.slice(1, -1);
-    const dataValues = decodedData.split(',');
-    const uuid = uuidv4();
-    dataValues.splice(0, 0, uuid);
-    dataValues.splice(1, 0, port);
 
-    const tableColumns = [
-      's_unique_id',
-      's_port_no',
-      'c_start_char',
-      's_pkt_hdr',
-      's_frmwr_ver',
-      's_pkt_typ',
-      's_pkt_status',
-      's_imei_no',
-      's_asset_id',
-      'i_gps_status',
-      'gps_dt',
-      'gps_tm',
-      'd_lat',
-      's_lat_dir',
-      'd_long',
-      's_long_dir',
-      'd_alt',
-      'd_spd',
-      's_grd_crs',
-      'i_sat_cnt',
-      'd_hdop',
-      'd_pdop',
-      's_ntw_op',
-      's_ntw_typ',
-      'd_sgnl_pwr',
-      'd_mn_pwr',
-      'd_int_bat_volt',
-      's_ign_ip',
-      's_buz_op',
-      's_dyn_f1',
-      's_bt_f',
-      's_u_art',
-      's_ext_adc_val',
-      's_dvc_state',
-      's_odometer',
-      's_pkt_cnt',
-      's_crc',
-      'c_last_char'
-    ];
-    var tableSelectionBasedOnGpsStatus;
-    const dataObject = {};
 
-    assetIdForAssetDeviceMapping = dataValues[7];
-    vehicleIdForAssetDeviceMapping = dataValues[8];
-    for (let i = 0; i < dataValues.length; i++) {
-      const columnName = tableColumns[i];
-      const value = dataValues[i];
-
-      if (value === '') {
-        dataObject[columnName] = 'NULL';
-      } else {
-        if (columnName === 'gps_dt') {
-          const datePart = dataValues[i];
-          const timePart = dataValues[i+1];
-          const year = datePart.slice(0, 4);
-          const month = datePart.slice(4, 6);
-          const day = datePart.slice(6);
-          const [hours, minutes, seconds] = timePart.split(':').map(Number);
-  /*        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
-          utcDate.setHours(utcDate.getHours() + 5);
-          utcDate.setMinutes(utcDate.getMinutes() + 30);
-          const ISTYear = utcDate.getUTCFullYear();
-          const ISTMonth = ('0' + (utcDate.getUTCMonth() + 1)).slice(-2);
-          const ISTDay = ('0' + utcDate.getUTCDate()).slice(-2);
-          const ISTHours = ('0' + utcDate.getUTCHours()).slice(-2);
-          const ISTMinutes = ('0' + utcDate.getUTCMinutes()).slice(-2);
-          const ISTSeconds = ('0' + utcDate.getUTCSeconds()).slice(-2);   
-  	  const dateFormat = `${ISTYear}-${ISTMonth}-${ISTDay}`
-          const timeFormat = `${ISTHours}:${ISTMinutes}:${ISTSeconds}`
-*/
-	 const dateFormat = `${year}-${month}-${day}`;
-	 const timeFormat = `${hours}:${minutes}:${seconds}`;
-          dataObject[columnName] = `'${dateFormat}'`;
-          dataObject['gps_tm'] = `'${timeFormat}'`;
-          timeFromDevice = timeFormat;
-          dateFromDevice = dateFormat;
-        }else if(columnName === 'gps_tm'){
-          continue;
-        }else if(columnName === 'd_lat'){
-          if(value == 'NA'){
-            dataObject[columnName] = 'NULL';  
-          }else{
-            dataObject[columnName] = value;  
-          }
-        }else if(columnName === 'd_long'){
-          if(value == 'NA'){
-            dataObject[columnName] = 'NULL';  
-          }else{
-            dataObject[columnName] = value;  
-          }
-        }
-        else if (columnName === 'i_gps_status') {
-          tableSelectionBasedOnGpsStatus = value;
-          dataObject[columnName] = `'${value}'`;
-        } else if (isNaN(value)) {
-          dataObject[columnName] = `'${value}'`;
-        } else {
-          dataObject[columnName] = value;
-        }
+    const decodedDataInArray = [];
+    let temp = "";
+    for (let i = 0; i < EncodedData.length; i++) {
+      temp += EncodedData[i];
+      if (temp.endsWith("*")) {
+        decodedDataInArray.push(temp);
+        temp = "";
       }
     }
-    const dataToInsert = {
-      decodedData: decodedData,
-      ServerHitTimestamp: serverHitTime,
-    };
-    const query1 = {
-      text: `
+    for (let i = 0; i < decodedDataInArray.length - 1; i++) {
+      decodedDataInArray[i] = decodedDataInArray[i].slice(0, -2) + ",*";
+      decodedDataInArray[i + 1] = "$" + decodedDataInArray[i + 1].slice(1);
+    }
+    decodedDataInArray[decodedDataInArray.length - 1] = decodedDataInArray[decodedDataInArray.length - 1].slice(0, -2) + "*";
+
+    for (let i = 0; i < decodedDataInArray.length; i++) {
+      const decodedData = decodedDataInArray[i];
+      if (!decodedData.startsWith('$') || !decodedData.endsWith('*')) {
+        console.error('Invalid data format');
+        return;
+      }
+      const dataContent = decodedData.slice(1, -1);
+      const dataValues = decodedData.split(',');
+      const uuid = uuidv4();
+      dataValues.splice(0, 0, uuid);
+      dataValues.splice(1, 0, port);
+
+      const tableColumns = [
+        's_unique_id',
+        's_port_no',
+        'c_start_char',
+        's_pkt_hdr',
+        's_frmwr_ver',
+        's_pkt_typ',
+        's_pkt_status',
+        's_imei_no',
+        's_asset_id',
+        'i_gps_status',
+        'gps_dt',
+        'gps_tm',
+        'd_lat',
+        's_lat_dir',
+        'd_long',
+        's_long_dir',
+        'd_alt',
+        'd_spd',
+        's_grd_crs',
+        'i_sat_cnt',
+        'd_hdop',
+        'd_pdop',
+        's_ntw_op',
+        's_ntw_typ',
+        'd_sgnl_pwr',
+        'd_mn_pwr',
+        'd_int_bat_volt',
+        's_ign_ip',
+        's_buz_op',
+        's_dyn_f1',
+        's_bt_f',
+        's_u_art',
+        's_ext_adc_val',
+        's_dvc_state',
+        's_odometer',
+        's_pkt_cnt',
+        's_crc',
+        'c_last_char'
+      ];
+      var tableSelectionBasedOnGpsStatus;
+      const dataObject = {};
+
+      assetIdForAssetDeviceMapping = dataValues[7];
+      vehicleIdForAssetDeviceMapping = dataValues[8];
+      for (let i = 0; i < dataValues.length; i++) {
+        const columnName = tableColumns[i];
+        const value = dataValues[i];
+
+        if (value === '') {
+          dataObject[columnName] = 'NULL';
+        } else {
+          if (columnName === 'gps_dt') {
+            const datePart = dataValues[i];
+            const timePart = dataValues[i + 1];
+            const year = datePart.slice(0, 4);
+            const month = datePart.slice(4, 6);
+            const day = datePart.slice(6);
+            const [hours, minutes, seconds] = timePart.split(':').map(Number);
+            const dateFormat = `${year}-${month}-${day}`;
+            const timeFormat = `${hours}:${minutes}:${seconds}`;
+            dataObject[columnName] = `'${dateFormat}'`;
+            dataObject['gps_tm'] = `'${timeFormat}'`;
+            timeFromDevice = timeFormat;
+            dateFromDevice = dateFormat;
+          } else if (columnName === 'gps_tm') {
+            continue;
+          } else if (columnName === 'd_lat') {
+            if (value == 'NA') {
+              dataObject[columnName] = 'NULL';
+            } else {
+              dataObject[columnName] = value;
+            }
+          } else if (columnName === 'd_long') {
+            if (value == 'NA') {
+              dataObject[columnName] = 'NULL';
+            } else {
+              dataObject[columnName] = value;
+            }
+          }
+          else if (columnName === 'i_gps_status') {
+            tableSelectionBasedOnGpsStatus = value;
+            dataObject[columnName] = `'${value}'`;
+          } else if (isNaN(value)) {
+            dataObject[columnName] = `'${value}'`;
+          } else {
+            dataObject[columnName] = value;
+          }
+        }
+      }
+      const dataToInsert = {
+        decodedData: decodedData,
+        ServerHitTimestamp: serverHitTime,
+      };
+      const query1 = {
+        text: `
               INSERT INTO datalog (s_unique_id,s_raw_pkt,svr_ht_ts,i_status,s_port_no,i_imei_no)
               VALUES ($1, $2 , $3, $4, $5, $6)
               RETURNING *;
           `,
-      values: [uuid, dataToInsert.decodedData, dataToInsert.ServerHitTimestamp, 0, port, dataObject['s_imei_no']],
-    };
-
-    let client = await getClient();
-    try {
-      const dataInsertResult = await client.query(query1);
-      const query2 = {
-        text: 'SELECT * FROM asset_device_mapping WHERE "s_asset_id" = $1 AND "i_nw_imei_no" = $2',
-        values: [assetIdForAssetDeviceMapping.toString(), vehicleIdForAssetDeviceMapping.toString()],
+        values: [uuid, dataToInsert.decodedData, dataToInsert.ServerHitTimestamp, 0, port, dataObject['s_imei_no']],
       };
 
-      const result = await client.query(query2);
-      if (result.rowCount === 0) {
-        if (tableSelectionBasedOnGpsStatus == 0) {
-          const insertQuery = {
-            text: `
+      let client = await getClient();
+      try {
+        const dataInsertResult = await client.query(query1);
+        const query2 = {
+          text: 'SELECT * FROM asset_device_mapping WHERE "s_asset_id" = $1 AND "i_nw_imei_no" = $2',
+          values: [assetIdForAssetDeviceMapping.toString(), vehicleIdForAssetDeviceMapping.toString()],
+        };
+
+        const result = await client.query(query2);
+        if (result.rowCount === 0) {
+          if (tableSelectionBasedOnGpsStatus == 0) {
+            const insertQuery = {
+              text: `
                           INSERT INTO gps_0_parsed_data (${Object.keys(dataObject).join(', ')})
                           VALUES (${Object.values(dataObject).join(', ')})
                           RETURNING *;
                       `,
-          };
-          const gpsDeviceDataInsert = await client.query(insertQuery);
-        } else {
-          const insertQuery = {
-            text: `
+            };
+            const gpsDeviceDataInsert = await client.query(insertQuery);
+          } else {
+            const insertQuery = {
+              text: `
                           INSERT INTO gps_1_parsed_data (${Object.keys(dataObject).join(', ')})
                           VALUES (${Object.values(dataObject).join(', ')})
                           RETURNING *;
                       `,
+            };
+            const gpsDeviceDataInsert = await client.query(insertQuery);
+          }
+          const query3 = {
+            text: 'UPDATE datalog SET "i_status" = 1 WHERE "s_raw_pkt" = $1',
+            values: [decodedData],
           };
-          const gpsDeviceDataInsert = await client.query(insertQuery);
-        }
-        const query3 = {
-          text: 'UPDATE datalog SET "i_status" = 1 WHERE "s_raw_pkt" = $1',
-          values: [decodedData],
-        };
 
-        const updateResult = await client.query(query3);
+          const updateResult = await client.query(query3);
 
-        const updateLastPortAccessbyImei = {
-          text: `
+          const updateLastPortAccessbyImei = {
+            text: `
                       UPDATE last_port_by_imei
                       SET "s_last_port_no" = ${port}
                       WHERE "i_imei_no" = $1`,
-          values: [dataObject['s_imei_no']],
-        };
-        const updatedPort = await client.query(updateLastPortAccessbyImei);
+            values: [dataObject['s_imei_no']],
+          };
+          const updatedPort = await client.query(updateLastPortAccessbyImei);
 
 
-        const existingDataQuery = {
+          const existingDataQuery = {
             text: ` 
                       SELECT * FROM lastgpsparseddatainfo 
                       WHERE "s_imei_no" = $1 AND "s_asset_id" = $2 `,
-             values:[assetIdForAssetDeviceMapping,vehicleIdForAssetDeviceMapping],
+            values: [assetIdForAssetDeviceMapping, vehicleIdForAssetDeviceMapping],
           };
           const existingDataResult = await client.query(existingDataQuery);
           const existingDataRows = existingDataResult.rows;
@@ -406,44 +411,40 @@ const storeDataInDb = async (port, decodedData, serverHitTime) => {
                         `,
             };
             const lastGpsParsedDataInfoInserted = await client.query(insertQuery);
-          }else{
+          } else {
             const existingData = existingDataResult.rows[0];
-let existingDataMake = new Date(existingData.gps_dt).toISOString().split('T')[0];
-const existingDateTime = new Date(`${existingDataMake} ${existingData.gps_tm}`);
+            let existingDataMake = new Date(existingData.gps_dt).toISOString().split('T')[0];
+            const existingDateTime = new Date(`${existingDataMake} ${existingData.gps_tm}`);
 
-let newDateMake = new Date(dateFromDevice).toISOString().split('T')[0];
-const newDataTime = new Date(`${newDateMake} ${timeFromDevice}`)
+            let newDateMake = new Date(dateFromDevice).toISOString().split('T')[0];
+            const newDataTime = new Date(`${newDateMake} ${timeFromDevice}`)
 
-console.log("Existing DateTime:", existingDateTime);
-console.log("New Date Time:", newDataTime)
-            if (newDataTime > existingDateTime) { 
+            if (newDataTime > existingDateTime) {
               const delQuery = {
-    text: `
-        DELETE FROM lastgpsparseddatainfo 
-        WHERE "s_imei_no" = '${assetIdForAssetDeviceMapping}' AND "s_asset_id" = '${vehicleIdForAssetDeviceMapping}'
-    `
-    };
-         let delLastEntryDeviceDetails =  await client.query(delQuery);
-		console.log("last entry",delLastEntryDeviceDetails);
+                text: `
+                      DELETE FROM lastgpsparseddatainfo 
+                      WHERE "s_imei_no" = '${assetIdForAssetDeviceMapping}' AND "s_asset_id" = '${vehicleIdForAssetDeviceMapping}'
+                  `
+              };
+              let delLastEntryDeviceDetails = await client.query(delQuery);
 
-const insertQuery = {
-              text: `
+              const insertQuery = {
+                text: `
                             INSERT INTO lastgpsparseddatainfo (${Object.keys(dataObject).join(', ')})
                             VALUES (${Object.values(dataObject).join(', ')})
                             RETURNING *;
                         `,
-            };
-            const lastGpsParsedDataInfoInserted = await client.query(insertQuery);
+              };
+              const lastGpsParsedDataInfoInserted = await client.query(insertQuery);
 
-console.log("updateLastInfo",lastGpsParsedDataInfoInserted);
+            }
           }
+        } else {
+          console.log('Data does not inserted into the gps_device_data');
         }
-        
-
-      } else {        console.log('Data does not inserted into the gps_device_data');
+      } finally {
+        await client.end();
       }
-    } finally {
-      await client.end();
     }
   } catch (error) {
     console.error('Error:', error);
