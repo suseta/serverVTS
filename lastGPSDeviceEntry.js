@@ -213,7 +213,8 @@ schedule.scheduleJob('* * * * *', async () => {
 const storeDataInDb = async (port, decodedData, serverHitTime) => {
   var assetIdForAssetDeviceMapping; // device_id
   var vehicleIdForAssetDeviceMapping; // vehicle_id
-
+  var timeFromDevice;
+ var dateFromDevice;
   try {
     if (!decodedData.startsWith('$') || !decodedData.endsWith('*')) {
       console.error('Invalid data format');
@@ -301,6 +302,8 @@ const storeDataInDb = async (port, decodedData, serverHitTime) => {
 	 const timeFormat = `${hours}:${minutes}:${seconds}`;
           dataObject[columnName] = `'${dateFormat}'`;
           dataObject['gps_tm'] = `'${timeFormat}'`;
+          timeFromDevice = timeFormat;
+          dateFromDevice = dateFormat;
         }else if(columnName === 'gps_tm'){
           continue;
         }else if(columnName === 'd_lat'){
@@ -347,7 +350,7 @@ const storeDataInDb = async (port, decodedData, serverHitTime) => {
         values: [assetIdForAssetDeviceMapping.toString(), vehicleIdForAssetDeviceMapping.toString()],
       };
 
-      const result = await client.query(query2);console.log("re",result);
+      const result = await client.query(query2);
       if (result.rowCount === 0) {
         if (tableSelectionBasedOnGpsStatus == 0) {
           const insertQuery = {
@@ -388,13 +391,13 @@ const storeDataInDb = async (port, decodedData, serverHitTime) => {
         const existingDataQuery = {
             text: ` 
                       SELECT * FROM lastgpsparseddatainfo 
-                      WHERE "s_imei_no" = $1 AND "s_asset_id" = $2`,
-                      values: [dataObject['s_imei_no'], dataObject['s_asset_id']],
+                      WHERE "s_imei_no" = $1 AND "s_asset_id" = $2 `,
+             values:[assetIdForAssetDeviceMapping,vehicleIdForAssetDeviceMapping],
           };
           const existingDataResult = await client.query(existingDataQuery);
           const existingDataRows = existingDataResult.rows;
 
-          if (existingDataRows.length === 0) {console.log("if");
+          if (existingDataRows.length === 0) {
             const insertQuery = {
               text: `
                             INSERT INTO lastgpsparseddatainfo (${Object.keys(dataObject).join(', ')})
@@ -405,28 +408,39 @@ const storeDataInDb = async (port, decodedData, serverHitTime) => {
             const lastGpsParsedDataInfoInserted = await client.query(insertQuery);
           }else{
             const existingData = existingDataResult.rows[0];
-            let existingDataMake = new Date(existingData.gps_dt).toISOString().split('T')[0]
-            const existingDateTime = new Date(`${existingDataMake} ${existingData.gps_tm}`);
-            let newDateMake = new Date(dataObject.gps_dt).toISOString().split('T')[0]
-            const newDataTime = new Date(`${newDateMake} ${dataObject.gps_tm}`);
-  
+let existingDataMake = new Date(existingData.gps_dt).toISOString().split('T')[0];
+const existingDateTime = new Date(`${existingDataMake} ${existingData.gps_tm}`);
+
+let newDateMake = new Date(dateFromDevice).toISOString().split('T')[0];
+const newDataTime = new Date(`${newDateMake} ${timeFromDevice}`)
+
+console.log("Existing DateTime:", existingDateTime);
+console.log("New Date Time:", newDataTime)
             if (newDataTime > existingDateTime) { 
-              const updateQuery = {
-                text: `
-                  UPDATE lastgpsparseddatainfo 
-                  SET ${Object.keys(dataObject).map((key, i) => `${key} = $${i}`).join(', ')} 
-                  WHERE s_imei_no = $7 AND s_asset_id = $8
-                `,
-                values: [...Object.values(dataObject), dataObject['s_imei_no'], dataObject['s_asset_id']]
-              };
-          
-              await client.query(updateQuery);
+              const delQuery = {
+    text: `
+        DELETE FROM lastgpsparseddatainfo 
+        WHERE "s_imei_no" = '${assetIdForAssetDeviceMapping}' AND "s_asset_id" = '${vehicleIdForAssetDeviceMapping}'
+    `
+    };
+         let delLastEntryDeviceDetails =  await client.query(delQuery);
+		console.log("last entry",delLastEntryDeviceDetails);
+
+const insertQuery = {
+              text: `
+                            INSERT INTO lastgpsparseddatainfo (${Object.keys(dataObject).join(', ')})
+                            VALUES (${Object.values(dataObject).join(', ')})
+                            RETURNING *;
+                        `,
+            };
+            const lastGpsParsedDataInfoInserted = await client.query(insertQuery);
+
+console.log("updateLastInfo",lastGpsParsedDataInfoInserted);
           }
         }
         
 
-      } else {
-        console.log('Data does not inserted into the gps_device_data');
+      } else {        console.log('Data does not inserted into the gps_device_data');
       }
     } finally {
       await client.end();
