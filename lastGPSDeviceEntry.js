@@ -222,7 +222,7 @@ const storeDataInDb = async (port, EncodedData, serverHitTime) => {
       temp += EncodedData[i];
       if (temp.endsWith("*$")) {
         let parts = temp.split("*$");
-        let dataPart = parts[0] + ',*'
+        let dataPart = parts[0] + '*'
         decodedDataInArray.push(dataPart);
         temp = "$";
       } else if (temp.endsWith("*") && i === EncodedData.length - 1) {
