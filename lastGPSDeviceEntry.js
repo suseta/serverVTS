@@ -215,22 +215,23 @@ const storeDataInDb = async (port, EncodedData, serverHitTime) => {
   var dateFromDevice;
   try {
 
-
-
     const decodedDataInArray = [];
+
     let temp = "";
     for (let i = 0; i < EncodedData.length; i++) {
       temp += EncodedData[i];
-      if (temp.endsWith("*")) {
-        decodedDataInArray.push(temp);
-        temp = "";
+      if (temp.endsWith("*$")) {
+        let parts = temp.split("*$");
+        let dataPart = parts[0] + ',*'
+        dataArray.push(dataPart);
+        temp = "$";
+      } else if (temp.endsWith("*") && i === data.length - 1) {
+        let parts = temp.split('*');
+        parts = parts[0] + ',*'
+        console.log("parts", parts);
+        dataArray.push(parts);
       }
     }
-    for (let i = 0; i < decodedDataInArray.length - 1; i++) {
-      decodedDataInArray[i] = decodedDataInArray[i].slice(0, -2) + ",*";
-      decodedDataInArray[i + 1] = "$" + decodedDataInArray[i + 1].slice(1);
-    }
-    decodedDataInArray[decodedDataInArray.length - 1] = decodedDataInArray[decodedDataInArray.length - 1].slice(0, -2) + "*";
 
     for (let i = 0; i < decodedDataInArray.length; i++) {
       const decodedData = decodedDataInArray[i];
